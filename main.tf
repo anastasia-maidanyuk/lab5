@@ -1,5 +1,7 @@
 provider "aws" {
-  region = var.aws_region
+  region     = var.aws_region
+  access_key = var.aws_access_key
+  secret_key = var.aws_secret_key
 }
 
 resource "aws_vpc" "main" {
@@ -26,7 +28,7 @@ resource "aws_security_group" "main" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["195.26.18.182/0"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
@@ -38,11 +40,12 @@ resource "aws_security_group" "main" {
 }
 
 resource "aws_instance" "app" {
-  ami            = var.ami_id
-  instance_type = var.instance_type
-  subnet_id     = aws_subnet.main.id
-  security_groups = [aws_security_group.main.name]
-
+  ami                      = var.ami_id
+  instance_type            = var.instance_type
+  subnet_id                = aws_subnet.main.id
+  vpc_security_group_ids   = [aws_security_group.main.id]
+  associate_public_ip_address = true
+  
   user_data = <<-EOF
               #!/bin/bash
               sudo apt-get update
@@ -54,14 +57,13 @@ resource "aws_instance" "app" {
               sudo usermod -aG docker ubuntu
               sudo systemctl start docker
               sudo systemctl enable docker
-      sudo docker pull maidanyuk/lab5
-      cd lab5
-      sudo docker run -d -p 80:80 maidanyuk/lab5:latest
-      docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --interval 60
+              docker pull maidanyuk/lab5:latest
+              docker run -d -p 80:80 maidanyuk/lab5:latest
+              docker run -d --name watchtower -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtower --interval 60
               EOF
 
   tags = {
-    Name = "js-app-instance"
+    Name = "lab6"
   }
 }
 
